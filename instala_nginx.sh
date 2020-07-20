@@ -48,7 +48,11 @@ so=$(lsb_release -d|expand|tr -s " "|cut -d: -f2|cut -d" " -f2|tr [:upper:] [:lo
 verso=$(lsb_release -c|expand|tr -d " "|cut -d: -f2|tr [:upper:] [:lower:])
 echo "deb http://nginx.org/packages/mainline/$so/ $verso nginx">/etc/apt/sources.list.d/nginx.list
 echo "deb-src http://nginx.org/packages/mainline/$so $verso nginx">>/etc/apt/sources.list.d/nginx.list
-wget http://nginx.org/keys/nginx_signing.key -O /etc/apt/nginx_signing.key && apt-key add /etc/apt/nginx_signing.key && apt-get update && apt-get install -y nginx || echo "Error instalación Nginx" && exit 33
+wget http://nginx.org/keys/nginx_signing.key -O /etc/apt/nginx_signing.key && apt-key add /etc/apt/nginx_signing.key && apt-get update && apt-get install -y nginx
+if [ "$?" != 0 ];then
+ echo "Error instalación Nginx"
+ exit 33
+fi
 #Habilitamos firewall para evitar conexiones mientras configuramos/securizamos el servidor
 #Compruebo si hay regla firewall de 80 si está debo comprobar si está DROP
 #if ! iptables -L -n|grep -e ":80" >/dev/null 2>/dev/null ;then
