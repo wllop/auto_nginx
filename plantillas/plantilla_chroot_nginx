@@ -58,15 +58,10 @@ deny all;
 		deny all;
 	}
         location ~ \.php$ {
-		#fastcgi_pass unix:/run/php/php7.3-fpm.sock;
 		::fastcgi::
                 fastcgi_index /index.php;
 		include fastcgi_params;
-		#fastcgi_param  SCRIPT_FILENAME    $fastcgi_script_name;	        
-		#fastcgi_param  SCRIPT_FILENAME    $document_root$fastcgi_script_name;
-		#include fastcgi.conf;
-                #fastcgi_intercept_errors on;
-                #fastcgi_pass php;
+                fastcgi_param  SCRIPT_FILENAME   web$fastcgi_script_name;
         }
 
         location ~* \.(js|css|png|jpg|jpeg|gif|ico|webm)$ {

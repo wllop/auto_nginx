@@ -18,24 +18,20 @@ if [ -f /etc/init.d/nginx ];then
    ##Comprobar plantillas
    cp -f plantillas/plantilla_nginx /tmp/plantilla_site
    cp -f plantillas/plantilla_nginx_ssl /tmp/plantilla_site_ssl
-   if  type php >/dev/null 2>/dev/null; then
-     vphp="1"
-     rutafcgi=$(find /run/php -name *.sock|head -1|sed 's/\//\\\//g')
-     sed -i "s/::fastcgi::/fastcgi_pass unix:$rutafcgi;/g" /tmp/plantilla_site
-     sed -i "s/::fastcgi::/fastcgi_pass unix:$rutafcgi;/g" /tmp/plantilla_site_ssl
-    else
-     vphp="0"
-     sed -i "s/::fastcgi::/#/g" /tmp/plantilla_site
-     sed -i "s/::fastcgi::/#/g" /tmp/plantilla_site_ssl
-   fi 
+   cp -f plantillas/plantilla_chroot_nginx /tmp/plantilla_chroot_site
+   cp -f plantillas/plantilla_chroot_nginx_ssl /tmp/plantilla_chroot_site_ssl
    #Copiamos las plantillas de sites en /etc/nginx/sites-availables
    if [ -d /etc/nginx/sites-available ]; then
      mv /tmp/plantilla_site /etc/nginx/sites-available
      mv /tmp/plantilla_site_ssl /etc/nginx/sites-available
+     mv /tmp/plantilla_chroot_site /etc/nginx/sites-available
+     mv /tmp/plantilla_chroot_site_ssl /etc/nginx/sites-available
    else
      mkdir -p /etc/nginx/sites-available
      mv /tmp/plantilla_site /etc/nginx/sites-available
      mv /tmp/plantilla_site_ssl /etc/nginx/sites-available
+     mv /tmp/plantilla_chroot_site /etc/nginx/sites-available
+     mv /tmp/plantilla_chroot_site_ssl /etc/nginx/sites-av
    fi
    echo "Plantillas actualizadas"
    exit
@@ -44,10 +40,18 @@ if [ -f /etc/init.d/nginx ];then
  fi
 fi
 #Mirar si es debianlsb o Ubuntu
+#Compruebo disponibilidad lsb_release
+if type lsb_release >/dev/null;then
 so=$(lsb_release -d|expand|tr -s " "|cut -d: -f2|cut -d" " -f2|tr [:upper:] [:lower:])
 verso=$(lsb_release -c|expand|tr -d " "|cut -d: -f2|tr [:upper:] [:lower:])
+else
+ apt -y install lsb-release
+so=$(lsb_release -d|expand|tr -s " "|cut -d: -f2|cut -d" " -f2|tr [:upper:] [:lower:])
+verso=$(lsb_release -c|expand|tr -d " "|cut -d: -f2|tr [:upper:] [:lower:])
+fi
 echo "deb http://nginx.org/packages/mainline/$so/ $verso nginx">/etc/apt/sources.list.d/nginx.list
 echo "deb-src http://nginx.org/packages/mainline/$so $verso nginx">>/etc/apt/sources.list.d/nginx.list
+apt-get install -y gnupg2
 wget http://nginx.org/keys/nginx_signing.key -O /etc/apt/nginx_signing.key && apt-key add /etc/apt/nginx_signing.key && apt-get update && apt-get install -y nginx
 if [ "$?" != 0 ];then
  echo "Error instalación Nginx"
@@ -129,25 +133,21 @@ if ! test -f plantillas/plantilla_nginx_ssl ; then
 fi
 cp plantillas/plantilla_nginx plantilla_site
 cp plantillas/plantilla_nginx_ssl plantilla_site_ssl
-if  type php >/dev/null 2>/dev/null; then
-     vphp="1"
-     rutafcgi=$(find /run/php -name *.sock|head -1|sed 's/\//\\\//g')
-     sed -i "s/::fastcgi::/fastcgi_pass unix:$rutafcgi;/g" plantilla_site
-     sed -i "s/::fastcgi::/fastcgi_pass unix:$rutafcgi;/g" plantilla_site_ssl
-else
-     vphp="0"
-     sed -i "s/::fastcgi::/#/g" plantilla_site
-     sed -i "s/::fastcgi::/#/g" plantilla_site_ssl
-
-fi
+cp plantillas/plantilla_chroot_nginx plantilla_chroot_site
+cp plantillas/plantilla_chroot_nginx_ssl plantilla_chroot_site_ssl
 #Copiamos las plantillas de sites en /etc/nginx/sites-availables
 if [ -d /etc/nginx/sites-available ]; then
      mv plantilla_site /etc/nginx/sites-available
      mv plantilla_site_ssl /etc/nginx/sites-available
+     mv plantilla_chroot_site /etc/nginx/sites-available
+     mv plantilla_chroot_site_ssl /etc/nginx/sites-available
 else
      mkdir -p /etc/nginx/sites-available
      mv plantilla_site /etc/nginx/sites-available
      mv plantilla_site_ssl /etc/nginx/sites-available
+     mv plantilla_chroot_site /etc/nginx/sites-available
+     mv plantilla_chroot_site_ssl /etc/nginx/sites-available
+
 fi
 #Comprobamos que exite el directorio sites-enabled
 if [ ! -d "/etc/nginx/sites-enabled" ];then
@@ -192,6 +192,28 @@ if [ -f $ruta ];then
     sed -i "s/$vphp2/$vnphp2/g" $ruta
   fi
 fi
+##Gestión mail en php
+res=""
+  while [ "$res" != "s" ] && [ "$res" != "S" ] && [ "$res" != "n" ] && [ "$res" != "N" ];
+  do
+  read -p "¿Va a enviar correos electrónicos desde PHP (S|N)?" res
+  done
+  if [ "$res" == "s" ] || [ "$res" == "S" ]; then
+   if ! type sendmail 2>/dev/null; then
+   echo "No está instalado el comando sendmail()."
+   res=""
+    while [ "$res" != "s" ] && [ "$res" != "S" ] && [ "$res" != "n" ] && [ "$res" != "N" ];
+    do
+     read -p "¿Desea instalarlo (S/N)? Es posible que deba configurar el servidor SMTP para conseguir que los correos sean enviados con éxito." res
+    done
+    if [ "$res" == "s" ] || [ "$res" == "S" ]; then
+     apt install -y mailutils
+    else
+     echo "Al carecer de función sendmail() no podrá enviar correos desde la Web."
+    fi
+   fi
+  fi
+
 fi
 done
 if [ "$res" == "s" ] || [ "$res" == "S" ]; then #Se han realizado cambios en php.ini
@@ -211,13 +233,4 @@ then
       openssl dhparam -out /etc/ssl/certs/dhparam.pem 4096
 fi
 
-#Ahora ya permitimos el acceso
-#Habilitamos firewall
-#Compruebo si hay regla firewall de 80
-#if ! iptables -L -n|grep -e ":80" >/dev/null 2>/dev/null ;then
-#  iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-#fi
-##Compruebo si hay regla firewall de 443
-#if ! iptables -L -n|grep -e ":443" >/dev/null 2>/dev/null ;then
-#  iptables -A INPUT -p tcp --dport 443 -j ACCEPT
-#fi
+ 
