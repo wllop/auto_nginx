@@ -15,7 +15,8 @@ USO:
 
 # IMPORTANTE
 FASE DE PRUEBAS!!!!! Falta mayor testeo para comprobar que TODO funciona de forma correcta. 
-EN EL ENTORNO CHROOT FALTA un SCRIPT de inicio que MONTE el entorno CHROOT!!! ((PRÓXIMAMENTE)). También para que en entorno CHROOT funcione el envío de correos a través de la función, por ejemplo mail(), es necesario descargar y compilar Mini_Sendmail: https://github.com/vkucukcakar/mini_sendmail/blob/master/README.md
+Puesto que el entorno CHROOT requiere montaje de ciertas ubicaciones dentro del CHROOT, he creado un .sh llamada autochroot.sh que realiza el montaje de TODAS los sitios web 'chrooteados'. Puesto que esta operación hay que realizarala cada vez que se reinice el servidor, hay que ubicar el script en /etc/init.d, dar permisos de ejecución chmod a+x autochroot.sh y ejecutar update-rc.d autochroot defaults y LISTO!! 
+También para que en entorno CHROOT funcione el envío de correos a través de la función, por ejemplo mail(), es necesario descargar y compilar Mini_Sendmail: https://github.com/vkucukcakar/mini_sendmail/blob/master/README.md
 Probado de forma satisfactoria en Debian 10 "Buster".
 
 # MEJORAS PENDIENTES

@@ -190,9 +190,10 @@ mount --bind /lib/x86_64-linux-gnu/libc.so.6 /var/www/$user/chroot/lib/x86_64-li
 mkdir -p /var/www/$user/chroot/lib64/
 touch /var/www/$user/chroot/lib64/ld-linux-x86-64.so.2
 mount --bind /lib64/ld-linux-x86-64.so.2 /var/www/$user/chroot/lib64/ld-linux-x86-64.so.2
-
-cp -f /etc/hosts /var/www/$user/chroot/etc/hosts
-cp -frp /etc/localtime /var/www/$user/chroot/etc/localtime
+touch /var/www/$user/chroot/etc/hosts
+touch /var/www/$user/chroot/etc/localtime
+mount --bind /etc/hosts /var/www/$user/chroot/etc/hosts
+mount --bind /etc/localtime /var/www/$user/chroot/etc/localtime
 mkdir -p /var/www/$user/chroot/usr/share/zoneinfo
 mount -o "ro,bind" /usr/share/zoneinfo /var/www/$user/chroot/usr/share/zoneinfo
 mkdir -p /var/www/$user/chroot/usr/share/ca-certificates
