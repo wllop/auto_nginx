@@ -241,7 +241,10 @@ if [ "$res" == "s" ] || [ "$res" == "S" ]; then
    echo "Error en el certificado."
    exit
   fi
-  rutacert=$(ls -d  /etc/letsencrypt/live/$1*)
+  rutacert=$(ls -d  /etc/letsencrypt/live/$1* 2>/dev/null)
+  if [ "$rutacert" == "" ]; then
+     rutacert=$(ls -d  /etc/letsencrypt/live/www.$1* 2>/dev/null)
+  fi
   ln -s $rutacert /etc/nginx/ssl/$1 2>/dev/null
   mkdir -p /var/www/$user/chroot/ssl/$1
   mount -o "ro,bind" /etc/letsencrypt/live/$1 /var/www/$user/chroot/ssl/$1 
@@ -403,7 +406,10 @@ fi
    if [ -e /etc/nginx/ssl/$1 ]; then
     rm -fr /etc/nginx/ssl/$1
    fi
-  rutacert=$(ls -d  /etc/letsencrypt/live/$1*)
+  rutacert=$(ls -d  /etc/letsencrypt/live/$1* 2>/dev/null)
+  if [ "$rutacert" == "" ]; then
+     rutacert=$(ls -d  /etc/letsencrypt/live/www.$1* 2>/dev/null)
+  fi
   ln -s $rutacert /etc/nginx/ssl/$1 2>/dev/null
   fi
   regula=$1
